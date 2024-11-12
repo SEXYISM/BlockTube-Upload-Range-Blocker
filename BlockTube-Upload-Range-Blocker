@@ -1,0 +1,51 @@
+// This should be pasted into the "Advanced Blocking" field of BlockTube.
+(video, objectType) => {
+  // Check if publishTimeText exists
+  if (!video.publishTimeText) {
+    // Cannot determine the upload date; do not block
+    return false;
+  }
+
+  const text = video.publishTimeText;
+
+  // Regular expression to match number and time unit (e.g., "5 years ago")
+  const regex = /(\d+)\s*(year|month|week|day|hour|minute|second)s?\s+ago/i;
+  const matches = text.match(regex);
+
+  if (matches && matches[1] && matches[2]) {
+    const number = parseInt(matches[1], 10);
+    const unit = matches[2].toLowerCase();
+
+    const now = new Date();
+    let uploadDate = new Date();
+
+    // Average milliseconds in each time unit
+    const millisecondsIn = {
+      year: 365.25 * 24 * 60 * 60 * 1000,   // Account for leap years
+      month: 30.44 * 24 * 60 * 60 * 1000,   // Average month length
+      week: 7 * 24 * 60 * 60 * 1000,
+      day: 24 * 60 * 60 * 1000,
+      hour: 60 * 60 * 1000,
+      minute: 60 * 1000,
+      second: 1000,
+    };
+
+    // Calculate the approximate upload date
+    const diff = number * millisecondsIn[unit];
+    uploadDate = new Date(now.getTime() - diff);
+
+    // Define cutoff date: videos uploaded after December 31, 2012 will be blocked
+    const cutoffDate = new Date('2013-01-01T00:00:00Z');
+
+    if (uploadDate >= cutoffDate) {
+      // Uploaded after 2012; block the video
+      return true;
+    } else {
+      // Uploaded in 2012 or earlier; do not block
+      return false;
+    }
+  } else {
+    // Cannot parse publishTimeText; do not block
+    return false;
+  }
+}
